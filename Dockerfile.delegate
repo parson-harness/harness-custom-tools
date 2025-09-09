@@ -1,0 +1,7 @@
+FROM harness/delegate:25.08.86600.minimal-fips
+
+# Install extra delegate software (example: cookiecutter)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      python3 python3-pip && \
+    pip3 install cookiecutter && \
+    rm -rf /var/lib/apt/lists/*
