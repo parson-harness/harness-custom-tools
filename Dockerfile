@@ -151,10 +151,12 @@ WORKDIR /home/harness
 # -----------------------------------------
 FROM tooling AS ci
 
-# 1) Make all repos “safe” for git (avoids unsafe repo warnings)
+# Run as root so we can write to /harness regardless of who owns it
+USER 0
+
+# Make all repos “safe” for git (avoids unsafe repo warnings)
 RUN git config --system --add safe.directory '*'
 
-# 2) Run as root so we can write to /harness regardless of who owns it
-USER 0
+
 WORKDIR /harness
 ENTRYPOINT ["/bin/bash"]
