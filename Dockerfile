@@ -150,6 +150,11 @@ WORKDIR /home/harness
 # Target 2: CI build container (bash entrypoint)
 # -----------------------------------------
 FROM tooling AS ci
-USER 10001
-WORKDIR /home/harness
+
+# 1) Make all repos “safe” for git (avoids unsafe repo warnings)
+RUN git config --system --add safe.directory '*'
+
+# 2) Run as root so we can write to /harness regardless of who owns it
+USER 0
+WORKDIR /harness
 ENTRYPOINT ["/bin/bash"]
