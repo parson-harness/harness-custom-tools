@@ -138,6 +138,9 @@ COPY --from=tooling /usr/local/bin/ /usr/local/bin/
 COPY --from=tooling /opt/ /opt/
 COPY --from=tooling /etc/sudoers.d/harness /etc/sudoers.d/harness
 COPY --from=tooling /home/harness /home/harness
+COPY --from=tooling /usr/bin/git /usr/bin/git
+COPY --from=tooling /usr/lib/git-core/ /usr/lib/git-core/
+COPY --from=tooling /etc/ssl/certs/ /etc/ssl/certs/
 # Restore non-root for consistency (delegate ENTRYPOINT remains unchanged)
 USER 10001
 WORKDIR /home/harness
@@ -146,16 +149,7 @@ WORKDIR /home/harness
 # -----------------------------------------
 # Target 2: CI build container (bash entrypoint)
 # -----------------------------------------
-FROM ubuntu:22.04 AS ci
-ENV DEBIAN_FRONTEND=noninteractive \
-    PIPX_BIN_DIR=/usr/local/bin \
-    PIPX_HOME=/opt/pipx \
-    PATH=/opt/pipx/bin:$PATH
-# Copy prebuilt tooling
-COPY --from=tooling /usr/local/bin/ /usr/local/bin/
-COPY --from=tooling /opt/ /opt/
-COPY --from=tooling /etc/sudoers.d/harness /etc/sudoers.d/harness
-COPY --from=tooling /home/harness /home/harness
+FROM tooling AS ci
 USER 10001
 WORKDIR /home/harness
 ENTRYPOINT ["/bin/bash"]
