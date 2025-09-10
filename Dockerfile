@@ -157,6 +157,5 @@ USER 0
 # Make all repos “safe” for git (avoids unsafe repo warnings)
 RUN git config --system --add safe.directory '*'
 
-
 WORKDIR /harness
 ENTRYPOINT ["/bin/bash"]
