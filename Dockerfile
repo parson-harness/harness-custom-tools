@@ -127,11 +127,12 @@ RUN curl -fsSLo /tmp/golangci-lint.tar.gz \
  && mv /tmp/golangci-lint-*/golangci-lint /usr/local/bin/ \
  && rm -rf /tmp/golangci-lint*
 
-# gosec (binary install)
-ARG GOSEC_VERSION=2.21.4
-RUN curl -fsSLo /usr/local/bin/gosec \
-      https://github.com/securego/gosec/releases/download/v${GOSEC_VERSION}/gosec_Linux_x86_64 \
- && chmod +x /usr/local/bin/gosec
+ARG GOSEC_VERSION=2.22.10
+RUN curl -fsSLo /tmp/gosec.tgz \
+      https://github.com/securego/gosec/releases/download/v${GOSEC_VERSION}/gosec_${GOSEC_VERSION}_linux_amd64.tar.gz \
+ && tar -xzf /tmp/gosec.tgz -C /usr/local/bin gosec \
+ && chmod +x /usr/local/bin/gosec \
+ && rm -f /tmp/gosec.tgz
 
 # govulncheck (via go install; keep in PATH)
 RUN go install golang.org/x/vuln/cmd/govulncheck@latest
