@@ -1,5 +1,4 @@
 ARG BASE_IMAGE
-FROM ${BASE_IMAGE} AS delegate
 
 # -----------------------------
 # Common tooling (no entrypoint)
@@ -107,6 +106,35 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
 RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | bash - \
  && apt-get update && apt-get install -y nodejs \
  && npm i -g yarn pnpm
+
+# --- Go toolchain + linters/security tools for CI ---
+ARG GO_VERSION=1.23.0
+ENV GOROOT=/usr/local/go \
+    GOPATH=/opt/go \
+    PATH=/usr/local/go/bin:/opt/go/bin:$PATH
+
+# Install Go
+RUN curl -fsSLo /tmp/go.tgz https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz \
+ && tar -C /usr/local -xzf /tmp/go.tgz \
+ && mkdir -p /opt/go/{bin,pkg,src} \
+ && rm -f /tmp/go.tgz
+
+# golangci-lint (binary install)
+ARG GOLANGCI_LINT_VERSION=v1.54.2
+RUN curl -fsSLo /tmp/golangci-lint.tar.gz \
+      https://github.com/golangci/golangci-lint/releases/download/${GOLANGCI_LINT_VERSION}/golangci-lint-${GOLANGCI_LINT_VERSION#v}-linux-amd64.tar.gz \
+ && tar -xzf /tmp/golangci-lint.tar.gz -C /tmp \
+ && mv /tmp/golangci-lint-*/golangci-lint /usr/local/bin/ \
+ && rm -rf /tmp/golangci-lint*
+
+# gosec (binary install)
+ARG GOSEC_VERSION=2.21.4
+RUN curl -fsSLo /usr/local/bin/gosec \
+      https://github.com/securego/gosec/releases/download/v${GOSEC_VERSION}/gosec_Linux_x86_64 \
+ && chmod +x /usr/local/bin/gosec
+
+# govulncheck (via go install; keep in PATH)
+RUN go install golang.org/x/vuln/cmd/govulncheck@latest
 
 # Sonar Scanner (optional)
 RUN wget -q https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${SONAR_SCANNER_VERSION}-linux.zip \
