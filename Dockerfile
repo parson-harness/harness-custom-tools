@@ -21,11 +21,15 @@ ARG TERRAFORM_VERSION=1.9.5
 ARG TOFU_VERSION=1.7.2
 ARG TFLINT_VERSION=0.51.1
 ARG TERRAGRUNT_VERSION=0.56.4
+ARG TERRASCAN_VERSION=1.18.7
 ARG KUBECTL_VERSION=1.30.3
 ARG HELM_VERSION=3.15.3
 ARG YQ_VERSION=4.44.3
 ARG SONAR_SCANNER_VERSION=5.0.1.3006
 ARG NODE_MAJOR=20
+ARG GO_VERSION=1.25.0
+ARG GOLANGCI_LINT_VERSION=v2.5.0
+ARG GOSEC_VERSION=2.22.8
 
 # Terraform
 RUN wget -q https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip \
@@ -53,7 +57,6 @@ RUN wget -q https://github.com/aquasecurity/tfsec/releases/latest/download/tfsec
 RUN pip3 install --no-cache-dir pipx && pipx install checkov
 
 # Terrascan
-ARG TERRASCAN_VERSION=1.18.7
 RUN wget -q https://github.com/tenable/terrascan/releases/download/v${TERRASCAN_VERSION}/terrascan_${TERRASCAN_VERSION}_Linux_x86_64.tar.gz \
  && tar -xzf terrascan_${TERRASCAN_VERSION}_Linux_x86_64.tar.gz terrascan \
  && mv terrascan /usr/local/bin/ && chmod +x /usr/local/bin/terrascan \
@@ -108,7 +111,6 @@ RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | bash - \
  && npm i -g yarn pnpm
 
 # --- Go toolchain + linters/security tools for CI ---
-ARG GO_VERSION=1.23.0
 ENV GOROOT=/usr/local/go \
     GOPATH=/opt/go \
     PATH=/usr/local/go/bin:/opt/go/bin:$PATH
@@ -120,14 +122,12 @@ RUN curl -fsSLo /tmp/go.tgz https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz
  && rm -f /tmp/go.tgz
 
 # golangci-lint (binary install)
-ARG GOLANGCI_LINT_VERSION=v1.54.2
 RUN curl -fsSLo /tmp/golangci-lint.tar.gz \
       https://github.com/golangci/golangci-lint/releases/download/${GOLANGCI_LINT_VERSION}/golangci-lint-${GOLANGCI_LINT_VERSION#v}-linux-amd64.tar.gz \
  && tar -xzf /tmp/golangci-lint.tar.gz -C /tmp \
  && mv /tmp/golangci-lint-*/golangci-lint /usr/local/bin/ \
  && rm -rf /tmp/golangci-lint*
 
-ARG GOSEC_VERSION=2.22.10
 RUN curl -fsSLo /tmp/gosec.tgz \
       https://github.com/securego/gosec/releases/download/v${GOSEC_VERSION}/gosec_${GOSEC_VERSION}_linux_amd64.tar.gz \
  && tar -xzf /tmp/gosec.tgz -C /usr/local/bin gosec \
