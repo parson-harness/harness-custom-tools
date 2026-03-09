@@ -6,8 +6,6 @@
 # -----------------------------------------------------------------------------
 # Stage 1: Build tools in a separate image to keep final image smaller
 # -----------------------------------------------------------------------------
-ARG BASE_IMAGE
-
 FROM ubuntu:22.04 AS tooling
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -72,9 +70,8 @@ RUN curl -fsSL "https://github.com/kubernetes-sigs/kustomize/releases/download/k
 # Build with: docker build --build-arg DELEGATE_TAG=25.02.85600 -t my-delegate .
 # -----------------------------------------------------------------------------
 
-ARG BASE_IMAGE
-ARG DELEGATE_TAG=${BASE_IMAGE}
-FROM ${BASE_IMAGE} AS delegate
+ARG DELEGATE_TAG=25.02.85600
+FROM harness/delegate:${DELEGATE_TAG}
 
 USER root
 
