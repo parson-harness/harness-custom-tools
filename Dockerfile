@@ -10,6 +10,9 @@
 #   docker build --target ci -t harness-custom-runner .
 # =============================================================================
 
+# Global ARG - must be before any FROM to be used in FROM instructions
+ARG BASE_IMAGE=harness/delegate:latest
+
 # -----------------------------------------------------------------------------
 # Stage 1: Tooling - Build all tools in Ubuntu for compatibility
 # -----------------------------------------------------------------------------
@@ -161,7 +164,6 @@ RUN echo "=== Tool Versions ===" \
 # -----------------------------------------------------------------------------
 # Stage 2: Delegate - Extend official Harness delegate
 # -----------------------------------------------------------------------------
-ARG BASE_IMAGE
 FROM ${BASE_IMAGE} AS delegate
 
 USER root
