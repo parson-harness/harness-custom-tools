@@ -190,12 +190,10 @@ COPY --from=tooling /usr/share/keyrings/cloud.google.gpg /usr/share/keyrings/clo
 ENV PATH="/usr/lib/google-cloud-sdk/bin:${PATH}"
 ENV USE_GKE_GCLOUD_AUTH_PLUGIN=True
 
-# Install Python3 for gcloud (minimal install)
-RUN microdnf install -y python3 \
-    && microdnf clean all
-
-# Make git safe for all directories (avoids warnings in pipelines)
-RUN git config --system --add safe.directory '*'
+# Install Python3 for gcloud (minimal install) and configure git for pipelines
+RUN microdnf install -y python3 git \
+    && microdnf clean all \
+    && git config --system --add safe.directory '*'
 
 # Verify tools work
 RUN terraform version && aws --version && gcloud version --format="value(version)"
