@@ -173,7 +173,6 @@ COPY --from=tooling /usr/local/bin/terraform /usr/local/bin/
 COPY --from=tooling /usr/local/bin/tofu /usr/local/bin/
 COPY --from=tooling /usr/local/bin/terragrunt /usr/local/bin/
 COPY --from=tooling /usr/local/bin/tflint /usr/local/bin/
-COPY --from=tooling /usr/local/bin/aws /usr/local/bin/
 COPY --from=tooling /opt/aws-cli /opt/aws-cli
 COPY --from=tooling /usr/local/bin/kubectl /usr/local/bin/
 COPY --from=tooling /usr/local/bin/helm /usr/local/bin/
@@ -181,6 +180,11 @@ COPY --from=tooling /usr/local/bin/kustomize /usr/local/bin/
 COPY --from=tooling /usr/local/bin/argocd /usr/local/bin/
 COPY --from=tooling /usr/local/bin/yq /usr/local/bin/
 COPY --from=tooling /usr/bin/gh /usr/local/bin/
+
+# Copy AWS CLI - need to copy the entire installation and recreate symlink
+COPY --from=tooling /opt/aws-cli /opt/aws-cli
+RUN ln -sf /opt/aws-cli/v2/current/bin/aws /usr/local/bin/aws \
+    && ln -sf /opt/aws-cli/v2/current/bin/aws_completer /usr/local/bin/aws_completer
 
 # Copy gcloud SDK
 COPY --from=tooling /usr/lib/google-cloud-sdk /usr/lib/google-cloud-sdk
