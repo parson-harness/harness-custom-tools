@@ -180,7 +180,7 @@ COPY --from=tooling /usr/local/bin/helm /usr/local/bin/
 COPY --from=tooling /usr/local/bin/kustomize /usr/local/bin/
 COPY --from=tooling /usr/local/bin/argocd /usr/local/bin/
 COPY --from=tooling /usr/local/bin/yq /usr/local/bin/
-COPY --from=tooling /usr/local/bin/gh /usr/local/bin/
+COPY --from=tooling /usr/bin/gh /usr/local/bin/
 
 # Copy gcloud SDK
 COPY --from=tooling /usr/lib/google-cloud-sdk /usr/lib/google-cloud-sdk
