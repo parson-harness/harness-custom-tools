@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Optional: set to one of: minimal-fips | minimal | ubi | fips | "" (empty for no suffix preference)
-PREFERRED_FLAVOR="${PREFERRED_FLAVOR:-minimal-fips}"
+# Optional: set to one of: minimal | minimal-fips | ubi | fips | "" (empty for no suffix preference)
+PREFERRED_FLAVOR="${PREFERRED_FLAVOR:-minimal}"
 
 # Output mode: tag | image
 PRINT_MODE="${PRINT_MODE:-image}"   # default: full image

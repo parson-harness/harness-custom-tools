@@ -202,8 +202,13 @@ RUN microdnf install -y python3 git \
 # Verify tools work
 RUN terraform version && aws --version && gcloud version --format="value(version)"
 
-# Restore non-root user (delegate runs as 1001)
-USER 1001
+# Ensure proper permissions on delegate directory
+RUN chmod -R 775 /opt/harness-delegate \
+    && chgrp -R 0 /opt/harness-delegate \
+    && chown -R 1001 /opt/harness-delegate
+
+# Restore non-root user (delegate runs as harness user)
+USER harness
 
 LABEL maintainer="Harness SE" \
       description="Harness Delegate with Terraform, AWS CLI, Google Cloud CLI, and K8s tools"
