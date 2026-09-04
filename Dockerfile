@@ -4,14 +4,8 @@
 # Build targets:
 #   - delegate: Extends official Harness delegate with cloud CLIs
 #   - ci: Standalone CI runner image with full toolchain
-#
-# Usage:
-#   docker build --build-arg BASE_IMAGE=harness/delegate:25.02.85600.minimal-fips --target delegate -t custom-delegate .
-#   docker build --target ci -t harness-custom-runner .
 # =============================================================================
 
-# Global ARG - must be before any FROM to be used in FROM instructions
-#ARG BASE_IMAGE=harness/delegate:latest
 ARG BASE_IMAGE=us-docker.pkg.dev/gar-prod-setup/harness-public/harness/delegate:26.08.89804
 
 # -----------------------------------------------------------------------------
@@ -23,21 +17,6 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PIPX_BIN_DIR=/usr/local/bin \
     PIPX_HOME=/opt/pipx \
     PATH=/opt/pipx/bin:$PATH
-
-# =============================================================================
-# Tool Versions (stable as of March 2025)
-# =============================================================================
-ARG TERRAFORM_VERSION=1.10.5
-ARG TOFU_VERSION=1.9.1
-ARG TERRAGRUNT_VERSION=0.72.6
-ARG TFLINT_VERSION=0.55.1
-ARG AWS_CLI_VERSION=2.27.22
-ARG GCLOUD_VERSION=515.0.0
-ARG KUBECTL_VERSION=1.32.3
-ARG HELM_VERSION=3.17.1
-ARG KUSTOMIZE_VERSION=5.6.0
-ARG YQ_VERSION=4.45.1
-ARG ARGOCD_VERSION=2.14.4
 
 # Core build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -62,25 +41,28 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # =============================================================================
 
 # Terraform
-RUN wget -q https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip \
+RUN TERRAFORM_VERSION=$(curl -s https://checkpoint-api.hashicorp.com/v1/check/terraform | jq -r -M '.current_version') \
+    && wget -q https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip \
     && unzip -q terraform_${TERRAFORM_VERSION}_linux_amd64.zip \
     && mv terraform /usr/local/bin/ \
     && rm -f terraform_*.zip
 
-# OpenTofu (Terraform alternative)
-RUN wget -q https://github.com/opentofu/opentofu/releases/download/v${TOFU_VERSION}/tofu_${TOFU_VERSION}_linux_amd64.zip \
+# OpenTofu
+RUN TAG=$(curl -Ls -o /dev/null -w %{url_effective} https://github.com/opentofu/opentofu/releases/latest | awk -F'/' '{print $NF}') \
+    && TOFU_VERSION=${TAG#v} \
+    && wget -q https://github.com/opentofu/opentofu/releases/download/${TAG}/tofu_${TOFU_VERSION}_linux_amd64.zip \
     && unzip -q tofu_${TOFU_VERSION}_linux_amd64.zip \
     && mv tofu /usr/local/bin/ \
     && rm -f tofu_*.zip
 
 # Terragrunt
-RUN wget -q https://github.com/gruntwork-io/terragrunt/releases/download/v${TERRAGRUNT_VERSION}/terragrunt_linux_amd64 \
-    -O /usr/local/bin/terragrunt \
+RUN TAG=$(curl -Ls -o /dev/null -w %{url_effective} https://github.com/gruntwork-io/terragrunt/releases/latest | awk -F'/' '{print $NF}') \
+    && wget -q https://github.com/gruntwork-io/terragrunt/releases/download/${TAG}/terragrunt_linux_amd64 -O /usr/local/bin/terragrunt \
     && chmod +x /usr/local/bin/terragrunt
 
 # TFLint
-RUN curl -fsSL -o /tmp/tflint.zip \
-    "https://github.com/terraform-linters/tflint/releases/download/v${TFLINT_VERSION}/tflint_linux_amd64.zip" \
+RUN TAG=$(curl -Ls -o /dev/null -w %{url_effective} https://github.com/terraform-linters/tflint/releases/latest | awk -F'/' '{print $NF}') \
+    && curl -fsSL -o /tmp/tflint.zip "https://github.com/terraform-linters/tflint/releases/download/${TAG}/tflint_linux_amd64.zip" \
     && unzip -q /tmp/tflint.zip -d /usr/local/bin \
     && rm -f /tmp/tflint.zip
 
@@ -88,8 +70,8 @@ RUN curl -fsSL -o /tmp/tflint.zip \
 # Cloud Provider CLIs
 # =============================================================================
 
-# AWS CLI v2
-RUN curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-${AWS_CLI_VERSION}.zip" -o awscliv2.zip \
+# AWS CLI v2 (Default URL always pulls the latest version)
+RUN curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o awscliv2.zip \
     && unzip -q awscliv2.zip \
     && ./aws/install --install-dir /opt/aws-cli --bin-dir /usr/local/bin \
     && rm -rf aws awscliv2.zip
@@ -100,8 +82,8 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.
     && curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg \
     | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg \
     && apt-get update && apt-get install -y --no-install-recommends \
-    google-cloud-cli=${GCLOUD_VERSION}-0 \
-    google-cloud-cli-gke-gcloud-auth-plugin=${GCLOUD_VERSION}-0 \
+    google-cloud-cli \
+    google-cloud-cli-gke-gcloud-auth-plugin \
     && rm -rf /var/lib/apt/lists/*
 
 # =============================================================================
@@ -109,24 +91,20 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.
 # =============================================================================
 
 # kubectl
-RUN curl -fsSLo /usr/local/bin/kubectl \
-    "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl" \
+RUN KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt) \
+    && curl -fsSLo /usr/local/bin/kubectl "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" \
     && chmod +x /usr/local/bin/kubectl
 
 # Helm
-RUN curl -fsSL "https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz" \
-    | tar -xzf - -C /tmp \
-    && mv /tmp/linux-amd64/helm /usr/local/bin/helm \
-    && rm -rf /tmp/linux-amd64
+RUN curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
 # kustomize
-RUN curl -fsSL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" \
-    | tar -xzf - -C /usr/local/bin \
-    && chmod +x /usr/local/bin/kustomize
+RUN curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash \
+    && mv kustomize /usr/local/bin/
 
 # ArgoCD CLI
-RUN curl -fsSLo /usr/local/bin/argocd \
-    "https://github.com/argoproj/argo-cd/releases/download/v${ARGOCD_VERSION}/argocd-linux-amd64" \
+RUN TAG=$(curl -Ls -o /dev/null -w %{url_effective} https://github.com/argoproj/argo-cd/releases/latest | awk -F'/' '{print $NF}') \
+    && curl -fsSLo /usr/local/bin/argocd "https://github.com/argoproj/argo-cd/releases/download/${TAG}/argocd-linux-amd64" \
     && chmod +x /usr/local/bin/argocd
 
 # =============================================================================
@@ -134,8 +112,8 @@ RUN curl -fsSLo /usr/local/bin/argocd \
 # =============================================================================
 
 # yq (YAML processor)
-RUN wget -q "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64" \
-    -O /usr/local/bin/yq \
+RUN TAG=$(curl -Ls -o /dev/null -w %{url_effective} https://github.com/mikefarah/yq/releases/latest | awk -F'/' '{print $NF}') \
+    && wget -q "https://github.com/mikefarah/yq/releases/download/${TAG}/yq_linux_amd64" -O /usr/local/bin/yq \
     && chmod +x /usr/local/bin/yq
 
 # GitHub CLI
