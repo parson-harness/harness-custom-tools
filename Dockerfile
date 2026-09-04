@@ -11,7 +11,8 @@
 # =============================================================================
 
 # Global ARG - must be before any FROM to be used in FROM instructions
-ARG BASE_IMAGE=harness/delegate:latest
+#ARG BASE_IMAGE=harness/delegate:latest
+ARG BASE_IMAGE=us-docker.pkg.dev/gar-prod-setup/harness-public/harness/delegate:26.08.89804
 
 # -----------------------------------------------------------------------------
 # Stage 1: Tooling - Build all tools in Ubuntu for compatibility
